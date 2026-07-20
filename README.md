@@ -22,31 +22,33 @@ O usuário nunca mais precisa lembrar quais serviços paga. O sistema:
 |--------|------------|---------------|
 | Frontend | Next.js 15, React 19, TypeScript, Tailwind, shadcn/ui, Framer Motion, React Query, Zustand | SSR/SSG, tipagem, DX, estado servidor/cliente |
 | Backend | NestJS, TypeScript, Prisma, REST | Modularidade, DI, validação, OpenAPI nativo |
-| Banco | PostgreSQL 16 | Relacional, ACID, JSONB, full-text |
-| Cache/Filas | Redis 7 | Sessões, rate limit, filas BullMQ, cache de insights |
+| Banco | PostgreSQL (Supabase) | Relacional, ACID, JSONB, full-text, gerenciado |
 | Storage | Supabase Storage | Logos, PDFs de relatórios, anexos de e-mail |
 | Auth | Auth.js (NextAuth) + JWT/Refresh no API | OAuth social + e-mail, tokens de API seguros |
 | IA | OpenAI (function calling + embeddings) | Q&A, RAG, classificação, insights |
-| Infra | Docker Compose, GitHub Actions, Vercel (web), Railway/Render (API) | Portabilidade e CI/CD |
-| Observabilidade | Sentry + OpenTelemetry | Erros e traces distribuídos |
-| Push | Firebase Cloud Messaging | Alertas em tempo quase real |
+| Deploy | Vercel (frontend), Render (backend) | Serverless, fácil deploy, escalável |
 
-## Estrutura do monorepo
+## Estrutura do projeto
 
 ```
-hubfinancas/
-├── apps/
-│   ├── web/                 # Next.js (Vercel)
-│   └── api/                 # NestJS (Railway/Render)
-├── packages/
-│   ├── shared/              # Tipos, Zod schemas, constantes
-│   ├── tsconfig/            # TS configs compartilhados
-│   └── eslint-config/       # ESLint compartilhado
-├── docs/                    # Documentação de produto e engenharia
-├── docker/                  # Dockerfiles e configs
-├── scripts/                 # Utilitários de setup e seed
-├── docker-compose.yml
-├── package.json             # pnpm workspaces
+subscriptionhub/
+├── frontend/                # Next.js (Vercel)
+│   ├── src/
+│   │   ├── app/            # App Router pages
+│   │   ├── components/     # UI components
+│   │   ├── hooks/          # Custom hooks
+│   │   ├── services/       # API services
+│   │   ├── stores/         # Zustand stores
+│   │   ├── types/          # TypeScript types
+│   │   └── utils/          # Utilities
+│   └── package.json
+├── backend/                 # NestJS (Render)
+│   ├── src/
+│   │   ├── common/         # Shared utilities
+│   │   ├── modules/        # Feature modules
+│   │   └── prisma/         # Prisma client
+│   └── package.json
+├── docs/                    # Documentação
 └── README.md
 ```
 
@@ -55,40 +57,38 @@ hubfinancas/
 ### Pré-requisitos
 
 - Node.js 22+
-- pnpm 9+
-- Docker e Docker Compose
-- Contas: OpenAI, Google Cloud (OAuth/Gmail), Supabase (opcional no dev)
+- npm
+- Conta Supabase
+- Contas: OpenAI, Google Cloud (OAuth/Gmail) - opcionais
 
 ### Desenvolvimento local
 
 ```bash
 # 1. Instalar dependências
-pnpm install
+npm install
 
-# 2. Subir PostgreSQL + Redis
-docker compose up -d postgres redis
+# 2. Configurar Supabase
+# Crie um projeto em https://supabase.com
+# Copie as connection strings para .env
 
 # 3. Configurar variáveis de ambiente
-cp apps/api/.env.example apps/api/.env
-cp apps/web/.env.example apps/web/.env.local
+cp backend/.env.example backend/.env
+cp frontend/.env.example frontend/.env.local
 
 # 4. Migrar e seed do banco
-pnpm --filter @subscriptionhub/api db:migrate
-pnpm --filter @subscriptionhub/api db:seed
+cd backend
+npm run db:generate
+npm run db:migrate
+npm run db:seed
 
-# 5. Subir API e Web
-pnpm dev
+# 5. Subir API e Web (em terminais separados)
+npm run dev:backend  # Terminal 1
+npm run dev:frontend # Terminal 2
 ```
 
 - Web: http://localhost:3000  
 - API: http://localhost:4000  
-- OpenAPI: http://localhost:4000/api/docs  
-
-### Docker completo
-
-```bash
-docker compose up --build
-```
+- OpenAPI: http://localhost:4000/api  
 
 ## Documentação
 
