@@ -1,0 +1,34 @@
+FROM node:22-alpine AS base
+RUN corepack enable && corepack prepare pnpm@9.15.0 --activate
+WORKDIR /app
+
+FROM base AS deps
+COPY package.json pnpm-workspace.yaml pnpm-lock.yaml* ./
+COPY packages/package.json ./packages/
+COPY apps/api/package.json ./apps/api/
+RUN pnpm install --filter @subscriptionhub/api... --frozen-lockfile || pnpm install --filter @subscriptionhub/api...
+
+FROM base AS build
+COPY --from=deps /app/node_modules ./node_modules
+COPY --from=deps /app/apps/api/node_modules ./apps/api/node_modules
+COPY --from=deps /app/packages ./packages
+COPY package.json pnpm-workspace.yaml ./
+COPY apps/api ./apps/api
+COPY packages ./packages
+WORKDIR /app/apps/api
+RUN pnpm exec prisma generate
+RUN pnpm build
+
+FROM node:22-alpine AS runner
+WORKDIR /app
+ENV NODE_ENV=production
+RUN corepack enable && corepack prepare pnpm@9.15.0 --activate
+RUN addgroup -g 1001 -S nodejs && adduser -S nestjs -u 1001
+COPY --from=build /app/apps/api/dist ./dist
+COPY --from=build /app/apps/api/package.json ./
+COPY --from=build /app/apps/api/prisma ./prisma
+COPY --from=build /app/apps/api/node_modules ./node_modules
+RUN chown -R nestjs:nodejs /app
+USER nestjs
+# Worker command (no migrations)
+CMD ["node", "dist/worker.js"]
