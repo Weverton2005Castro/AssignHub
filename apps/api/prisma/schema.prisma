@@ -1,0 +1,653 @@
+// SubscriptionHub — Prisma Schema
+// Valores monetários em centavos (Int). Isolamento multi-tenant por userId.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Enums ───────────────────────────────────────────────────────────────────
+
+enum AuthProvider {
+  EMAIL
+  GOOGLE
+  APPLE
+  MICROSOFT
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  PAUSED
+  CANCELLED
+  TRIAL
+  EXPIRED
+  UNKNOWN
+}
+
+enum BillingPeriod {
+  WEEKLY
+  MONTHLY
+  QUARTERLY
+  SEMIANNUAL
+  YEARLY
+  CUSTOM
+}
+
+enum SubscriptionSource {
+  MANUAL
+  OPEN_FINANCE
+  EMAIL
+  GOOGLE_PLAY
+  APPLE
+  AMAZON
+  MICROSOFT
+}
+
+enum ChargeStatus {
+  SCHEDULED
+  PAID
+  FAILED
+  SKIPPED
+  REFUNDED
+}
+
+enum PaymentMethodType {
+  CREDIT_CARD
+  DEBIT_CARD
+  PIX
+  BANK_ACCOUNT
+  DIGITAL_WALLET
+  OTHER
+}
+
+enum IntegrationType {
+  OPEN_FINANCE
+  GMAIL
+  GOOGLE_PLAY
+  APPLE
+  AMAZON
+  MICROSOFT
+}
+
+enum IntegrationStatus {
+  CONNECTED
+  DISCONNECTED
+  ERROR
+  PENDING
+  EXPIRED
+}
+
+enum ProposalStatus {
+  PENDING
+  CONFIRMED
+  REJECTED
+  MERGED
+}
+
+enum NotificationChannel {
+  IN_APP
+  EMAIL
+  PUSH
+}
+
+enum NotificationType {
+  CHARGE_TOMORROW
+  CHARGE_TODAY
+  TRIAL_ENDING
+  PRICE_INCREASE
+  NEW_SUBSCRIPTION
+  DUPLICATE
+  SAVINGS
+  PAYMENT_FAILED
+  SYSTEM
+}
+
+enum GoalType {
+  SAVE_AMOUNT
+  CANCEL_COUNT
+  REDUCE_CATEGORY
+}
+
+enum GoalStatus {
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+enum ReportFormat {
+  PDF
+  CSV
+}
+
+enum ReportJobStatus {
+  PENDING
+  PROCESSING
+  READY
+  FAILED
+}
+
+enum AiRole {
+  USER
+  ASSISTANT
+  SYSTEM
+  TOOL
+}
+
+// ─── Identity ────────────────────────────────────────────────────────────────
+
+model User {
+  id                String    @id @default(uuid()) @db.Uuid
+  email             String    @unique
+  emailVerifiedAt   DateTime?
+  passwordHash      String?
+  name              String
+  avatarUrl         String?
+  locale            String    @default("pt-BR")
+  timezone          String    @default("America/Sao_Paulo")
+  currency          String    @default("BRL") @db.Char(3)
+  onboardingDoneAt  DateTime?
+  deletedAt         DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  accounts                 Account[]
+  refreshTokens            RefreshToken[]
+  consents                 Consent[]
+  categories               Category[]
+  paymentMethods           PaymentMethod[]
+  subscriptions            Subscription[]
+  charges                  Charge[]
+  integrationConnections   IntegrationConnection[]
+  rawEvents                RawEvent[]
+  detectionProposals       DetectionProposal[]
+  merchantAliases          MerchantAlias[]
+  notifications            Notification[]
+  notificationPreferences  NotificationPreference?
+  devices                  Device[]
+  goals                    Goal[]
+  aiConversations          AiConversation[]
+  insights                 Insight[]
+  reportJobs               ReportJob[]
+  auditLogs                AuditLog[]
+  dailySpendStats          DailySpendStat[]
+  priceHistories           PriceHistory[]
+
+  @@index([deletedAt])
+  @@map("users")
+}
+
+model Account {
+  id                String       @id @default(uuid()) @db.Uuid
+  userId            String       @db.Uuid
+  provider          AuthProvider
+  providerAccountId String
+  accessTokenEnc    String?
+  refreshTokenEnc   String?
+  expiresAt         DateTime?
+  scope             String?
+  tokenType         String?
+  idTokenEnc        String?
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+  @@map("accounts")
+}
+
+model RefreshToken {
+  id              String    @id @default(uuid()) @db.Uuid
+  userId          String    @db.Uuid
+  tokenHash       String    @unique
+  familyId        String    @db.Uuid
+  expiresAt       DateTime
+  revokedAt       DateTime?
+  replacedById    String?   @db.Uuid
+  userAgent       String?
+  ipAddress       String?
+  createdAt       DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([familyId])
+  @@map("refresh_tokens")
+}
+
+model Consent {
+  id          String   @id @default(uuid()) @db.Uuid
+  userId      String   @db.Uuid
+  type        String
+  version     String
+  accepted    Boolean
+  ipAddress   String?
+  userAgent   String?
+  metadata    Json?
+  createdAt   DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, type])
+  @@map("consents")
+}
+
+// ─── Catalog ─────────────────────────────────────────────────────────────────
+
+model Category {
+  id          String   @id @default(uuid()) @db.Uuid
+  userId      String?  @db.Uuid
+  slug        String
+  name        String
+  isSystem    Boolean  @default(false)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user          User?          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subscriptions Subscription[]
+  goals         Goal[]
+
+  @@unique([userId, slug])
+  @@index([isSystem])
+  @@map("categories")
+}
+
+model PaymentMethod {
+  id          String            @id @default(uuid()) @db.Uuid
+  userId      String            @db.Uuid
+  type        PaymentMethodType
+  label       String
+  brand       String?
+  last4       String?           @db.Char(4)
+  bankName    String?
+  isDefault   Boolean           @default(false)
+  deletedAt   DateTime?
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subscriptions Subscription[]
+
+  @@index([userId])
+  @@map("payment_methods")
+}
+
+// ─── Subscriptions & charges ─────────────────────────────────────────────────
+
+model Subscription {
+  id               String             @id @default(uuid()) @db.Uuid
+  userId           String             @db.Uuid
+  categoryId       String             @db.Uuid
+  paymentMethodId  String?            @db.Uuid
+  name             String
+  company          String?
+  logoUrl          String?
+  amountCents      Int
+  currency         String             @default("BRL") @db.Char(3)
+  billingPeriod    BillingPeriod
+  customPeriodDays Int?
+  nextBillingDate  DateTime           @db.Date
+  autoRenew        Boolean            @default(true)
+  planName         String?
+  notes            String?
+  officialUrl      String?
+  status           SubscriptionStatus @default(ACTIVE)
+  source           SubscriptionSource @default(MANUAL)
+  unused           Boolean            @default(false)
+  trialEndsAt      DateTime?
+  lastSyncedAt     DateTime?
+  externalRef      String?
+  metadata         Json?
+  deletedAt        DateTime?
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+
+  user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category         Category          @relation(fields: [categoryId], references: [id])
+  paymentMethod    PaymentMethod?    @relation(fields: [paymentMethodId], references: [id], onDelete: SetNull)
+  priceHistories   PriceHistory[]
+  charges          Charge[]
+  proposals        DetectionProposal[]
+
+  @@index([userId, status])
+  @@index([userId, nextBillingDate])
+  @@index([userId, categoryId])
+  @@index([userId, source])
+  @@index([userId, deletedAt])
+  @@map("subscriptions")
+}
+
+model PriceHistory {
+  id              String   @id @default(uuid()) @db.Uuid
+  userId          String   @db.Uuid
+  subscriptionId  String   @db.Uuid
+  amountCents     Int
+  currency        String   @db.Char(3)
+  effectiveFrom   DateTime @default(now())
+  note            String?
+  createdAt       DateTime @default(now())
+
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subscription Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+
+  @@index([subscriptionId, effectiveFrom])
+  @@index([userId])
+  @@map("price_histories")
+}
+
+model Charge {
+  id              String       @id @default(uuid()) @db.Uuid
+  userId          String       @db.Uuid
+  subscriptionId  String       @db.Uuid
+  amountCents     Int
+  currency        String       @default("BRL") @db.Char(3)
+  dueDate         DateTime     @db.Date
+  status          ChargeStatus @default(SCHEDULED)
+  paidAt          DateTime?
+  failureReason   String?
+  sourceEventId   String?      @db.Uuid
+  metadata        Json?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subscription Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  sourceEvent  RawEvent?    @relation(fields: [sourceEventId], references: [id], onDelete: SetNull)
+
+  @@index([userId, dueDate])
+  @@index([subscriptionId, dueDate])
+  @@index([userId, status])
+  @@map("charges")
+}
+
+// ─── Integrations & detection ────────────────────────────────────────────────
+
+model IntegrationConnection {
+  id                 String            @id @default(uuid()) @db.Uuid
+  userId             String            @db.Uuid
+  type               IntegrationType
+  status             IntegrationStatus @default(PENDING)
+  externalAccountId  String?
+  credentialsEnc     String?
+  scopes             String[]
+  lastSyncAt         DateTime?
+  lastError          String?
+  metadata           Json?
+  consentExpiresAt   DateTime?
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  rawEvents RawEvent[]
+
+  @@unique([userId, type])
+  @@index([status])
+  @@map("integration_connections")
+}
+
+model RawEvent {
+  id              String             @id @default(uuid()) @db.Uuid
+  userId          String             @db.Uuid
+  connectionId    String?            @db.Uuid
+  source          SubscriptionSource
+  fingerprint     String
+  occurredAt      DateTime
+  amountCents     Int?
+  currency        String?            @db.Char(3)
+  merchantRaw     String?
+  merchantNorm    String?
+  description     String?
+  payload         Json
+  processedAt     DateTime?
+  createdAt       DateTime           @default(now())
+
+  user        User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  connection  IntegrationConnection? @relation(fields: [connectionId], references: [id], onDelete: SetNull)
+  charges     Charge[]
+  proposals   DetectionProposal[]
+
+  @@unique([userId, fingerprint])
+  @@index([userId, source, occurredAt])
+  @@index([userId, merchantNorm])
+  @@index([processedAt])
+  @@map("raw_events")
+}
+
+model DetectionProposal {
+  id                 String         @id @default(uuid()) @db.Uuid
+  userId             String         @db.Uuid
+  status             ProposalStatus @default(PENDING)
+  suggestedName      String
+  suggestedCompany   String?
+  suggestedAmount    Int
+  currency           String         @default("BRL") @db.Char(3)
+  suggestedPeriod    BillingPeriod
+  suggestedCategory  String?
+  confidence         Float
+  source             SubscriptionSource
+  evidenceEventIds   String[]       @db.Uuid
+  rawEventId         String?        @db.Uuid
+  subscriptionId     String?        @db.Uuid
+  rationale          String?
+  metadata           Json?
+  resolvedAt         DateTime?
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  rawEvent     RawEvent?     @relation(fields: [rawEventId], references: [id], onDelete: SetNull)
+  subscription Subscription? @relation(fields: [subscriptionId], references: [id], onDelete: SetNull)
+
+  @@index([userId, status])
+  @@map("detection_proposals")
+}
+
+model MerchantAlias {
+  id               String   @id @default(uuid()) @db.Uuid
+  userId           String   @db.Uuid
+  normalizedAlias  String
+  canonicalName    String
+  company          String?
+  categorySlug     String?
+  subscriptionId   String?  @db.Uuid
+  hitCount         Int      @default(1)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, normalizedAlias])
+  @@index([userId, canonicalName])
+  @@map("merchant_aliases")
+}
+
+// ─── Notifications ───────────────────────────────────────────────────────────
+
+model Notification {
+  id          String              @id @default(uuid()) @db.Uuid
+  userId      String              @db.Uuid
+  type        NotificationType
+  channel     NotificationChannel @default(IN_APP)
+  title       String
+  body        String
+  data        Json?
+  readAt      DateTime?
+  sentAt      DateTime?
+  idempotencyKey String?
+  createdAt   DateTime            @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, idempotencyKey])
+  @@index([userId, readAt, createdAt])
+  @@map("notifications")
+}
+
+model NotificationPreference {
+  id               String                @id @default(uuid()) @db.Uuid
+  userId           String                @unique @db.Uuid
+  channels         NotificationChannel[]
+  chargeReminders  Boolean               @default(true)
+  priceIncrease    Boolean               @default(true)
+  newDetections    Boolean               @default(true)
+  savingsTips      Boolean               @default(true)
+  marketing        Boolean               @default(false)
+  createdAt        DateTime              @default(now())
+  updatedAt        DateTime              @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notification_preferences")
+}
+
+model Device {
+  id         String   @id @default(uuid()) @db.Uuid
+  userId     String   @db.Uuid
+  fcmToken   String   @unique
+  platform   String?
+  userAgent  String?
+  lastSeenAt DateTime @default(now())
+  createdAt  DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("devices")
+}
+
+// ─── Goals ───────────────────────────────────────────────────────────────────
+
+model Goal {
+  id            String     @id @default(uuid()) @db.Uuid
+  userId        String     @db.Uuid
+  type          GoalType
+  title         String
+  targetCents   Int?
+  targetCount   Int?
+  categoryId    String?    @db.Uuid
+  currentCents  Int        @default(0)
+  currentCount  Int        @default(0)
+  status        GoalStatus @default(ACTIVE)
+  deadline      DateTime?  @db.Date
+  completedAt   DateTime?
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+
+  @@index([userId, status])
+  @@map("goals")
+}
+
+// ─── AI ──────────────────────────────────────────────────────────────────────
+
+model AiConversation {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @db.Uuid
+  title     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user     User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages AiMessage[]
+
+  @@index([userId, updatedAt])
+  @@map("ai_conversations")
+}
+
+model AiMessage {
+  id             String   @id @default(uuid()) @db.Uuid
+  conversationId String   @db.Uuid
+  role           AiRole
+  content        String
+  toolName       String?
+  toolPayload    Json?
+  tokenUsage     Int?
+  createdAt      DateTime @default(now())
+
+  conversation AiConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId, createdAt])
+  @@map("ai_messages")
+}
+
+model Insight {
+  id          String    @id @default(uuid()) @db.Uuid
+  userId      String    @db.Uuid
+  type        String
+  title       String
+  body        String
+  severity    String    @default("info")
+  data        Json?
+  dismissedAt DateTime?
+  expiresAt   DateTime?
+  createdAt   DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, dismissedAt, createdAt])
+  @@map("insights")
+}
+
+// ─── Reports & aggregates ────────────────────────────────────────────────────
+
+model ReportJob {
+  id          String          @id @default(uuid()) @db.Uuid
+  userId      String          @db.Uuid
+  type        String
+  format      ReportFormat
+  status      ReportJobStatus @default(PENDING)
+  params      Json
+  fileUrl     String?
+  error       String?
+  createdAt   DateTime        @default(now())
+  completedAt DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@map("report_jobs")
+}
+
+model DailySpendStat {
+  id                    String   @id @default(uuid()) @db.Uuid
+  userId                String   @db.Uuid
+  date                  DateTime @db.Date
+  totalCents            Int      @default(0)
+  byCategory            Json
+  activeSubscriptions   Int      @default(0)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, date])
+  @@map("daily_spend_stats")
+}
+
+// ─── Audit ───────────────────────────────────────────────────────────────────
+
+model AuditLog {
+  id         String   @id @default(uuid()) @db.Uuid
+  userId     String?  @db.Uuid
+  action     String
+  entityType String?
+  entityId   String?
+  ipAddress  String?
+  userAgent  String?
+  metadata   Json?
+  createdAt  DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt])
+  @@index([action, createdAt])
+  @@map("audit_logs")
+}

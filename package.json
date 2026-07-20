@@ -1,0 +1,30 @@
+{
+  "name": "subscriptionhub",
+  "private": true,
+  "version": "0.1.0",
+  "description": "SubscriptionHub — Copiloto Financeiro Pessoal",
+  "packageManager": "pnpm@9.15.0",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "pnpm -r --parallel --filter @subscriptionhub/api --filter @subscriptionhub/web dev",
+    "dev:api": "pnpm --filter @subscriptionhub/api dev",
+    "dev:web": "pnpm --filter @subscriptionhub/web dev",
+    "dev:worker": "pnpm --filter @subscriptionhub/api worker:dev",
+    "build": "pnpm -r build",
+    "build:shared": "pnpm --filter @subscriptionhub/shared build",
+    "lint": "pnpm -r lint",
+    "typecheck": "pnpm -r typecheck",
+    "test": "pnpm -r test",
+    "test:e2e": "pnpm --filter @subscriptionhub/web test:e2e",
+    "db:migrate": "pnpm --filter @subscriptionhub/api db:migrate",
+    "db:seed": "pnpm --filter @subscriptionhub/api db:seed",
+    "db:studio": "pnpm --filter @subscriptionhub/api db:studio",
+    "format": "prettier --write \"**/*.{ts,tsx,js,json,md}\""
+  },
+  "devDependencies": {
+    "prettier": "^3.4.2",
+    "typescript": "^5.7.2"
+  }
+}

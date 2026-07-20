@@ -1,0 +1,1 @@
+/home/modeasy/Documentos/rereprojects/hubfinanças/node_modules/.pnpm/@embedded-postgres+linux-x64@18.4.0-beta.17/node_modules/@embedded-postgres/linux-x64/native/bin/postgres "-D" "/home/modeasy/Documentos/rereprojects/hubfinanças/.local-data/postgres" "-p" "5435"
