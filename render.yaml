@@ -1,132 +1,93 @@
 services:
-  # PostgreSQL Database
-  - type: pserv
-    name: subscriptionhub-postgres
-    plan: free
-    databaseName: subscriptionhub
-    user: subscriptionhub
-
-  # Redis
-  - type: redis
-    name: subscriptionhub-redis
-    plan: free
-    maxmemoryPolicy: allkeys-lru
-
-  # API Web Service
   - type: web
     name: subscriptionhub-api
-    env: docker
+    runtime: docker
     plan: free
+
     dockerfilePath: ./apps/api/Dockerfile.render
     dockerContext: .
-    envVars:
-      - key: NODE_ENV
-        value: production
-      - key: PORT
-        value: 4000
-      - key: DATABASE_URL
-        fromDatabase:
-          name: subscriptionhub-postgres
-          property: connectionString
-      - key: REDIS_URL
-        fromService:
-          type: redis
-          name: subscriptionhub-redis
-          property: connectionString
-      - key: JWT_ACCESS_SECRET
-        generateValue: true
-      - key: JWT_REFRESH_SECRET
-        generateValue: true
-      - key: ENCRYPTION_KEY
-        generateValue: true
-      - key: CORS_ORIGINS
-        value: https://subscriptionhub-web.onrender.com
-      - key: APP_URL
-        value: https://subscriptionhub-web.onrender.com
-      - key: API_URL
-        value: https://subscriptionhub-api.onrender.com
-      - key: SMTP_HOST
-        value: smtp.gmail.com
-      - key: SMTP_PORT
-        value: 587
-      - key: SMTP_SECURE
-        value: false
-      - key: OPENAI_MODEL
-        value: gpt-4o-mini
-      - key: OPENAI_EMBEDDING_MODEL
-        value: text-embedding-3-small
-      - key: THROTTLE_TTL_MS
-        value: 60000
-      - key: THROTTLE_LIMIT
-        value: 100
+
     healthCheckPath: /health/ready
+
     autoDeploy: false
 
-  # Background Worker
-  - type: worker
-    name: subscriptionhub-worker
-    env: docker
-    plan: free
-    dockerfilePath: ./apps/api/Dockerfile.worker
-    dockerContext: .
     envVars:
       - key: NODE_ENV
         value: production
+
+      - key: PORT
+        value: 4000
+
       - key: DATABASE_URL
-        fromDatabase:
-          name: subscriptionhub-postgres
-          property: connectionString
+        sync: false
+
       - key: REDIS_URL
-        fromService:
-          type: redis
-          name: subscriptionhub-redis
-          property: connectionString
+        sync: false
+
       - key: JWT_ACCESS_SECRET
-        fromService:
-          type: web
-          name: subscriptionhub-api
-          property: envVar
-          envVarKey: JWT_ACCESS_SECRET
+        generateValue: true
+
       - key: JWT_REFRESH_SECRET
-        fromService:
-          type: web
-          name: subscriptionhub-api
-          property: envVar
-          envVarKey: JWT_REFRESH_SECRET
+        generateValue: true
+
       - key: ENCRYPTION_KEY
-        fromService:
-          type: web
-          name: subscriptionhub-api
-          property: envVar
-          envVarKey: ENCRYPTION_KEY
+        generateValue: true
+
+      - key: CORS_ORIGINS
+        value: https://subscriptionhub-web.onrender.com
+
+      - key: APP_URL
+        value: https://subscriptionhub-web.onrender.com
+
+      - key: API_URL
+        value: https://subscriptionhub-api.onrender.com
+
       - key: SMTP_HOST
-        fromService:
-          type: web
-          name: subscriptionhub-api
-          property: envVar
-          envVarKey: SMTP_HOST
+        value: smtp.gmail.com
+
       - key: SMTP_PORT
-        fromService:
-          type: web
-          name: subscriptionhub-api
-          property: envVar
-          envVarKey: SMTP_PORT
+        value: "587"
+
       - key: SMTP_SECURE
-        fromService:
-          type: web
-          name: subscriptionhub-api
-          property: envVar
-          envVarKey: SMTP_SECURE
+        value: "false"
+
       - key: OPENAI_MODEL
-        fromService:
-          type: web
-          name: subscriptionhub-api
-          property: envVar
-          envVarKey: OPENAI_MODEL
+        value: gpt-4o-mini
+
       - key: OPENAI_EMBEDDING_MODEL
-        fromService:
-          type: web
-          name: subscriptionhub-api
-          property: envVar
-          envVarKey: OPENAI_EMBEDDING_MODEL
+        value: text-embedding-3-small
+
+      - key: THROTTLE_TTL_MS
+        value: "60000"
+
+      - key: THROTTLE_LIMIT
+        value: "100"
+
+  - type: worker
+    name: subscriptionhub-worker
+    runtime: docker
+    plan: free
+
+    dockerfilePath: ./apps/api/Dockerfile.worker
+    dockerContext: .
+
     autoDeploy: false
+
+    envVars:
+      - key: NODE_ENV
+        value: production
+
+      - key: DATABASE_URL
+        sync: false
+
+      - key: REDIS_URL
+        sync: false
+
+      - key: JWT_ACCESS_SECRET
+        sync: false
+
+      - key: JWT_REFRESH_SECRET
+        sync: false
+
+      - key: ENCRYPTION_KEY
+        sync: false
