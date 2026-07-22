@@ -1,5 +1,5 @@
 import { PERIOD_TO_MONTHLY_FACTOR } from './constants';
-import { BillingPeriod } from './enums';
+import { BillingPeriod } from '../types/enums';
 
 /** Converte reais (decimal) para centavos inteiros com arredondamento bancário simples */
 export function toCents(amount: number): number {
