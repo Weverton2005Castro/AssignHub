@@ -1,4 +1,4 @@
-import { SystemCategorySlug } from './enums';
+import { SystemCategorySlug } from '../types/enums';
 
 export const APP_NAME = 'SubscriptionHub';
 export const APP_DESCRIPTION = 'Copiloto Financeiro Pessoal para assinaturas e gastos recorrentes';
