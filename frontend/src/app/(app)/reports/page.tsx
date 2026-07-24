@@ -35,13 +35,33 @@ export default function ReportsPage() {
   });
 
   const exportJob = useMutation({
-    mutationFn: (format: 'CSV' | 'PDF') =>
-      api.post('/api/v1/reports/export', {
+    mutationFn: async (format: 'CSV' | 'PDF') => {
+      const res = await api.post<{ data: { id: string } }>('/api/v1/reports/export', {
         type: 'custom',
         format,
         from,
         to,
-      }),
+      });
+      return { jobId: res.data.id, format };
+    },
+    onSuccess: async ({ jobId, format }) => {
+      // Poll for job completion
+      const maxAttempts = 10;
+      for (let i = 0; i < maxAttempts; i++) {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        const job = await api.get<{ data: { status: string; fileUrl?: string } }>(`/api/v1/reports/export/${jobId}`);
+        if (job.data.status === 'READY' && job.data.fileUrl) {
+          // Download the file
+          const link = document.createElement('a');
+          link.href = job.data.fileUrl;
+          link.download = `relatorio-${from}-${to}.${format.toLowerCase() === 'csv' ? 'csv' : 'txt'}`;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          return;
+        }
+      }
+    },
   });
 
   return (

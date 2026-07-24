@@ -73,6 +73,11 @@ export function Sidebar() {
           );
         })}
       </nav>
+      <div className="border-t px-4 py-3">
+        <p className="text-xs text-muted-foreground">
+          {!collapsed ? `v0.1.0` : 'v0.1.0'}
+        </p>
+      </div>
     </aside>
   );
 }

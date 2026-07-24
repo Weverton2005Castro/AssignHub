@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { api } from '@/lib/api';
 import { formatBRL, formatDate } from '@/lib/utils';
+import Link from 'next/link';
 
 type SubDetail = {
   data: {
@@ -67,6 +68,9 @@ export default function SubscriptionDetailPage() {
         description={s.company ?? undefined}
         actions={
           <>
+            <Link href={`/subscriptions/${id}/edit`}>
+              <Button variant="outline">Editar</Button>
+            </Link>
             <Button variant="outline" onClick={() => toggleUnused.mutate()}>
               {s.unused ? 'Marcar como em uso' : 'Marcar sem uso'}
             </Button>

@@ -10,7 +10,7 @@ import { setStoredTokens } from '@/lib/api';
 const links = [
   { href: '/profile', title: 'Perfil', desc: 'Nome, e-mail, locale e moeda' },
   { href: '/integrations', title: 'Contas conectadas', desc: 'Open Finance, Gmail e lojas' },
-  { href: '/notifications', title: 'Preferências de alerta', desc: 'Canais e tipos de notificação' },
+  { href: '/settings/notifications', title: 'Preferências de alerta', desc: 'Canais e tipos de notificação' },
   { href: '/settings/audit', title: 'Auditoria', desc: 'Seus logs de acesso e ações' },
   { href: '/settings/danger', title: 'Privacidade e conta', desc: 'Exportar dados ou excluir conta' },
 ];
