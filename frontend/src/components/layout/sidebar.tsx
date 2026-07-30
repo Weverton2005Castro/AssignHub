@@ -44,15 +44,7 @@ export function Sidebar() {
   const closeSidebarMobile = useUiStore((s) => s.closeSidebarMobile);
 
   return (
-    <aside
-      className={cn(
-        "fixed inset-y-0 left-0 z-50 flex flex-col border-r bg-background transition-transform duration-300",
-        open ? "translate-x-0" : "-translate-x-full",
-        "w-[240px]",
-        "md:static md:translate-x-0",
-        collapsed ? "md:w-[64px]" : "md:w-[240px]"
-      )}
-    >
+    <>
       {
         open && (
           <div
@@ -61,44 +53,56 @@ export function Sidebar() {
           />
         )
       }
-      <div className={cn('flex h-14 items-center border-b px-4', collapsed && 'justify-center px-2')}>
-        <Link href="/dashboard" className="font-semibold tracking-tight">
-          {collapsed ? 'SH' : 'SubscriptionHub'}
-        </Link>
-      </div>
-      <nav className="flex-1 space-y-0.5 overflow-y-auto p-2">
-        {nav.map((item) => {
-          const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
-          const Icon = item.icon;
-          return (
-            <Link
-              onClick={() => {
-                if (window.innerWidth < 768) {
-                  closeSidebarMobile();
-                }
-              }}
-              key={item.href}
-              href={item.href}
-              className={cn(
-                'flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors',
-                active
-                  ? 'bg-secondary font-medium text-foreground'
-                  : 'text-muted-foreground hover:bg-secondary/60 hover:text-foreground',
-                collapsed && 'justify-center px-2',
-              )}
-              title={item.label}
-            >
-              <Icon className="h-4 w-4 shrink-0" />
-              {!collapsed ? <span>{item.label}</span> : null}
-            </Link>
-          );
-        })}
-      </nav>
-      <div className="border-t px-4 py-3">
-        <p className="text-xs text-muted-foreground">
-          {!collapsed ? `v0.1.0` : 'v0.1.0'}
-        </p>
-      </div>
-    </aside>
+      <aside
+        className={cn(
+          "fixed inset-y-0 left-0 z-50 flex flex-col border-r bg-background transition-transform duration-300",
+          open ? "translate-x-0" : "-translate-x-full",
+          "w-[240px]",
+          "md:static md:translate-x-0",
+          collapsed ? "md:w-[64px]" : "md:w-[240px]"
+        )}
+      >
+        <div className={cn('flex h-14 items-center border-b px-4', collapsed && 'justify-center px-2')}>
+          <Link href="/dashboard" className="font-semibold tracking-tight">
+            {collapsed ? 'SH' : 'SubscriptionHub'}
+          </Link>
+        </div>
+        <nav className="flex-1 space-y-0.5 overflow-y-auto p-2">
+          {nav.map((item) => {
+            const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
+            const Icon = item.icon;
+            return (
+              <Link
+                onClick={() => {
+                  if (window.innerWidth < 768) {
+                    setTimeout(() => {
+                      closeSidebarMobile();
+                    }, 50);
+                  }
+                }}
+                key={item.href}
+                href={item.href}
+                className={cn(
+                  'flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors',
+                  active
+                    ? 'bg-secondary font-medium text-foreground'
+                    : 'text-muted-foreground hover:bg-secondary/60 hover:text-foreground',
+                  collapsed && 'justify-center px-2',
+                )}
+                title={item.label}
+              >
+                <Icon className="h-4 w-4 shrink-0" />
+                {!collapsed ? <span>{item.label}</span> : null}
+              </Link>
+            );
+          })}
+        </nav>
+        <div className="border-t px-4 py-3">
+          <p className="text-xs text-muted-foreground">
+            {!collapsed ? `v0.1.0` : 'v0.1.0'}
+          </p>
+        </div>
+      </aside>
+    </>
   );
 }
