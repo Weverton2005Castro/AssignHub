@@ -34,17 +34,33 @@ const nav = [
   { href: '/settings', label: 'Configurações', icon: Settings },
 ];
 
+
 export function Sidebar() {
+
   const pathname = usePathname();
+
+  const open = useUiStore((s) => s.sidebarOpen);
   const collapsed = useUiStore((s) => s.sidebarCollapsed);
+  const closeSidebarMobile = useUiStore((s) => s.closeSidebarMobile);
 
   return (
     <aside
       className={cn(
-        'hidden h-screen shrink-0 border-r bg-background md:flex md:flex-col',
-        collapsed ? 'w-[64px]' : 'w-[240px]',
+        "fixed inset-y-0 left-0 z-50 flex flex-col border-r bg-background transition-transform duration-300",
+        open ? "translate-x-0" : "-translate-x-full",
+        "w-[240px]",
+        "md:static md:translate-x-0",
+        collapsed ? "md:w-[64px]" : "md:w-[240px]"
       )}
     >
+      {
+        open && (
+          <div
+            className="fixed inset-0 z-40 bg-black/50 md:hidden"
+            onClick={closeSidebarMobile}
+          />
+        )
+      }
       <div className={cn('flex h-14 items-center border-b px-4', collapsed && 'justify-center px-2')}>
         <Link href="/dashboard" className="font-semibold tracking-tight">
           {collapsed ? 'SH' : 'SubscriptionHub'}
@@ -56,6 +72,11 @@ export function Sidebar() {
           const Icon = item.icon;
           return (
             <Link
+              onClick={() => {
+                if (window.innerWidth < 768) {
+                  closeSidebarMobile();
+                }
+              }}
               key={item.href}
               href={item.href}
               className={cn(

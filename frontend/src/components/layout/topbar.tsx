@@ -1,20 +1,32 @@
 'use client';
 
-import { Menu, Search } from 'lucide-react';
+import { Menu, Search, SidebarOpen } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useUiStore } from '@/stores/ui-store';
 
 export function TopbarFixed() {
+  const toggleSidebarMobile = useUiStore((s) => s.toggleSidebarMobile)
   const toggleSidebar = useUiStore((s) => s.toggleSidebar);
   const setCommandOpen = useUiStore((s) => s.setCommandOpen);
 
   return (
     <header className="sticky top-0 z-20 flex h-14 items-center gap-3 border-b bg-background/80 px-4 backdrop-blur">
-      <Button variant="ghost" size="icon" onClick={toggleSidebar} aria-label="Alternar menu">
+      <Button
+        variant="ghost"
+        size="icon"
+        onClick={() => {
+          if (window.innerWidth >= 768) {
+            toggleSidebar();
+          } else {
+            toggleSidebarMobile();
+          }
+        }}
+      >
         <Menu className="h-4 w-4" />
       </Button>
+
       <div className="relative hidden max-w-md flex-1 md:block">
         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input
