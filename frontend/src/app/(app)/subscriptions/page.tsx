@@ -1,6 +1,7 @@
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Pencil, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { useState } from 'react';
 import { EmptyState } from '@/components/shared/empty-state';
@@ -30,6 +31,7 @@ type SubList = {
 };
 
 export default function SubscriptionsPage() {
+  const qc = useQueryClient();
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('');
   const [category, setCategory] = useState('');
@@ -45,6 +47,11 @@ export default function SubscriptionsPage() {
       if (source) params.set('source', source);
       return api.get<SubList>(`/api/v1/subscriptions?${params.toString()}`);
     },
+  });
+
+  const remove = useMutation({
+    mutationFn: (id: string) => api.delete(`/api/v1/subscriptions/${id}`),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['subscriptions'] }),
   });
 
   return (
@@ -135,6 +142,7 @@ export default function SubscriptionsPage() {
                 <th className="hidden px-4 py-3 font-medium sm:table-cell">Próxima</th>
                 <th className="hidden px-4 py-3 font-medium lg:table-cell">Fonte</th>
                 <th className="px-4 py-3 font-medium">Status</th>
+                <th className="px-4 py-3 text-right font-medium">Ações</th>
               </tr>
             </thead>
             <tbody className="divide-y">
@@ -161,6 +169,28 @@ export default function SubscriptionsPage() {
                   </td>
                   <td className="px-4 py-3">
                     <Badge variant={s.status === 'ACTIVE' ? 'success' : 'muted'}>{s.status}</Badge>
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="flex justify-end gap-1">
+                      <Link href={`/subscriptions/${s.id}/edit`}>
+                        <Button variant="ghost" size="icon" aria-label={`Editar ${s.name}`}>
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                      </Link>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        aria-label={`Remover ${s.name}`}
+                        disabled={remove.isPending}
+                        onClick={() => {
+                          if (window.confirm(`Remover "${s.name}"? Esta ação não pode ser desfeita.`)) {
+                            remove.mutate(s.id);
+                          }
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    </div>
                   </td>
                 </tr>
               ))}
