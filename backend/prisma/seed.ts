@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import {
   BillingPeriod,
   PrismaClient,
@@ -5,7 +6,13 @@ import {
   SubscriptionStatus,
 } from '@prisma/client';
 import * as argon2 from 'argon2';
-import { SYSTEM_CATEGORIES } from '@subscriptionhub/shared';
+const SYSTEM_CATEGORIES = [
+  { slug: 'streaming', name: 'Streaming', sortOrder: 1 },
+  { slug: 'music', name: 'Música', sortOrder: 2 },
+  { slug: 'ai', name: 'Inteligência Artificial', sortOrder: 3 },
+  { slug: 'cloud', name: 'Armazenamento em Nuvem', sortOrder: 4 },
+  { slug: 'productivity', name: 'Produtividade', sortOrder: 5 },
+];
 
 const prisma = new PrismaClient();
 

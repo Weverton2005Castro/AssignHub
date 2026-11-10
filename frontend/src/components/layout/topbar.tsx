@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useUiStore } from '@/stores/ui-store';
+import { ThemeToggle } from '@/components/theme-toggle';
 
 export function TopbarFixed() {
   const toggleSidebarMobile = useUiStore((s) => s.toggleSidebarMobile)
@@ -37,6 +38,7 @@ export function TopbarFixed() {
         />
       </div>
       <div className="ml-auto flex items-center gap-2">
+        <ThemeToggle />
         <Link href="/ai">
           <Button variant="outline" size="sm">
             Copiloto
