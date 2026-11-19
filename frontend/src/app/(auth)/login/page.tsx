@@ -10,8 +10,8 @@ import { api, setStoredTokens } from '@/lib/api';
 
 export default function LoginPage() {
   const router = useRouter();
-  const [email, setEmail] = useState('demo@subscriptionhub.local');
-  const [password, setPassword] = useState('Demo1234!');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -52,7 +52,7 @@ export default function LoginPage() {
                 id="email"
                 type="email"
                 autoComplete="email"
-                value={email}
+                placeholder="Digite seu e-mail..."
                 onChange={(e) => setEmail(e.target.value)}
                 required
               />
@@ -65,7 +65,7 @@ export default function LoginPage() {
                 id="password"
                 type="password"
                 autoComplete="current-password"
-                value={password}
+                placeholder="Digite sua senha..."
                 onChange={(e) => setPassword(e.target.value)}
                 required
               />
