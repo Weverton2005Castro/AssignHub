@@ -1,13 +1,24 @@
 import type { Metadata } from 'next';
 import { Providers } from '@/components/providers';
 import './globals.css';
+import { isIndexable, siteDescription, siteName, siteUrl } from '@/lib/seo';
 
 export const metadata: Metadata = {
+  metadataBase: siteUrl,
   title: {
-    default: 'SubscriptionHub',
-    template: '%s · SubscriptionHub',
+    default: 'SubscriptionHub | Controle de assinaturas e gastos recorrentes',
+    template: '%s | SubscriptionHub',
   },
-  description: 'Copiloto Financeiro Pessoal para assinaturas e gastos recorrentes',
+  description: siteDescription,
+  applicationName: siteName,
+  robots: { index: isIndexable, follow: true },
+  openGraph: {
+    type: 'website', locale: 'pt_BR', siteName,
+    title: 'SubscriptionHub | Controle de assinaturas',
+    description: siteDescription,
+  },
+  twitter: { card: 'summary_large_image', title: 'SubscriptionHub | Controle de assinaturas', description: siteDescription },
+  verification: { google: process.env.GOOGLE_SITE_VERIFICATION || undefined },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
